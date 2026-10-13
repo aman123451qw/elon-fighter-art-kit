@@ -2,6 +2,9 @@
 
 Newest first. After every `git pull`, read the entries since your last pull.
 
+## 2026-10-14: self-check added
+- `selfcheck/` now works: `python selfcheck/selfcheck.py <file>` runs the same checks we run and says PASS / WARN / FAIL. Run it on each fighter's reference first. See `selfcheck/README.md`.
+
 ## 2026-10-14: first version
 - Brief finalised: 63 files, 10 clips per fighter (no crouch), phase 1 is lineup + Elon reference + idle + heavy.
 - Altman files and both money effects on magenta `#FF00FF`; everything else on green `#00FF00`; portraits painted.
