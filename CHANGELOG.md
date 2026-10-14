@@ -2,6 +2,12 @@
 
 Newest first. After every `git pull`, read the entries since your last pull.
 
+## 2026-10-14: characters finalised
+- Added `characters/`: the lineup and all 4 references. Start every clip from these.
+- Proportions stay realistic as in these images (the brief's "head about 1/5" no longer applies).
+- Zuckerberg keeps his gold chain in every clip.
+- Altman: you are redoing him. Deliver the new reference on magenta `#FF00FF`. Until then `characters/altman_reference.png` is your green original with the background swapped to magenta.
+
 ## 2026-10-14: self-check added
 - `selfcheck/` now works: `python selfcheck/selfcheck.py <file>` runs the same checks we run and says PASS / WARN / FAIL. Run it on each fighter's reference first. See `selfcheck/README.md`.
 
