@@ -320,7 +320,10 @@ def handle_clip(asset: spec.Asset, path: Path):
         return results, None
 
     selected = [keyed[i] for i in chosen]
-    placed, canvas_w, norm_warnings = sprites.normalize_clip(selected, stance, pin_feet=target.pin_feet)
+    target_height = sprites.STANCE_HEIGHT * spec.HEIGHT_RATIO.get(asset.fighter, 1.0)
+    placed, canvas_w, norm_warnings = sprites.normalize_clip(
+        selected, stance, pin_feet=target.pin_feet, target_height=target_height
+    )
     results.extend(("WARN", w) for w in norm_warnings)
 
     results.append(checks.check_body_edge(placed, canvas_w, sprites.FRAME))
@@ -671,6 +674,22 @@ CARD_OPPONENTS = {
 }
 
 
+def _load_standin_cells(sheet_path: Path) -> list[Image.Image]:
+    """Stand-in sheet frames at the current FRAME size. Old template sheets use
+    256 px frames: they are upscaled (nearest) and the file rewritten once, so
+    stand-ins and delivered sheets draw at the same 1:1 scale in the game.
+    """
+    sheet = Image.open(sheet_path).convert("RGBA")
+    if sheet.width == sprites.FRAME * sprites.COLUMNS or sheet.width % 256 != 0:
+        return sprites.unpack_sheet(sheet, sprites.FRAME, sprites.FRAME)
+
+    cells = sprites.unpack_sheet(sheet, 256, 256)
+    upscaled = [cell.resize((sprites.FRAME, sprites.FRAME), Image.NEAREST) for cell in cells]
+    if upscaled:
+        sprites.pack_sheet(upscaled).save(sheet_path)
+    return upscaled
+
+
 def cmd_standins() -> None:
     man = manifest.load_manifest()
 
@@ -679,7 +698,7 @@ def cmd_standins() -> None:
         idle_path = fighter_dir / "idle.png"
         idle_frames = []
         if idle_path.exists():
-            idle_frames = sprites.unpack_sheet(Image.open(idle_path).convert("RGBA"), 256, 256)
+            idle_frames = _load_standin_cells(idle_path)
         stance_left_edge = 0
         if idle_frames:
             vb = hitboxes.visual_box(np.array(idle_frames[0]))
@@ -695,19 +714,19 @@ def cmd_standins() -> None:
             if not sheet_path.exists():
                 print(f"warn: no stand-in sheet for {fighter}/{game_action}, skipping")
                 continue
-            cells = sprites.unpack_sheet(Image.open(sheet_path).convert("RGBA"), 256, 256)
+            cells = _load_standin_cells(sheet_path)
             if not cells:
                 print(f"warn: {sheet_path} has no non-empty frames, skipping")
                 continue
             target = spec.FRAME_TARGETS[action]
             boxes = [
-                hitboxes.frame_boxes(np.array(f), 256, action, i, stance_left_edge)
+                hitboxes.frame_boxes(np.array(f), sprites.FRAME, action, i, stance_left_edge)
                 for i, f in enumerate(cells)
             ]
             manifest.set_entry(man, kp, {
                 "url": f"/assets/fighters/{fighter}/{game_action}.png",
                 "frames": len(cells), "frameRate": target.fps, "repeat": target.repeat,
-                "frameWidth": 256, "frameHeight": 256, "source": "standin", "boxes": boxes,
+                "frameWidth": sprites.FRAME, "frameHeight": sprites.FRAME, "source": "standin", "boxes": boxes,
             })
 
         portrait_kp = ["fighters", fighter, "portrait"]

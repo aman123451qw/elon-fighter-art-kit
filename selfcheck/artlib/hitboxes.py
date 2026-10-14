@@ -29,7 +29,7 @@ def hit_box(visual: Box) -> Box:
 
 def collision_box(frame_w: int, stance_height: int = STANCE_HEIGHT, feet_y: int = FEET_Y) -> Box:
     """48px wide, centred on the frame, bottom at the feet line, 80% of stance height tall."""
-    w = 48
+    w = 68
     h = round(stance_height * 0.8)
     x = frame_w // 2 - w // 2
     y = feet_y - h

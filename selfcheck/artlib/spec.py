@@ -162,3 +162,9 @@ def suggest_closest(path_stem: str, n: int = 3) -> list[str]:
 
 def expected_delivered_filename(asset: Asset) -> str:
     return f"{asset.name}{asset.ext}"
+
+
+# Relative on-screen height per fighter (Elon tallest), baked into every sheet so
+# all fighters draw 1:1. From the finalised references: Ambani 776, Elon 772,
+# Altman 728, Zuckerberg 712 px; Elon is kept tallest by design.
+HEIGHT_RATIO = {"elon": 1.0, "ambani": 0.98, "altman": 0.95, "zuckerberg": 0.93}

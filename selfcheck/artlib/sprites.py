@@ -12,11 +12,14 @@ from PIL import Image, ImageDraw
 
 from .spec import FrameTarget
 
-FRAME = 256
+# Sheets are drawn 1:1 on the 1280x720 screen (fighter scale 1.0), so the stance
+# height here IS the on-screen height. Old template sheets were 256 px frames
+# shown at 1.4x; these are 1.40625x those numbers with no runtime upscaling.
+FRAME = 360
 COLUMNS = 5
-STANCE_HEIGHT = 204
-FEET_Y = 232
-CANVAS_WIDTHS = (256, 320, 384)
+STANCE_HEIGHT = 287
+FEET_Y = 326
+CANVAS_WIDTHS = (360, 450, 540)
 
 ALPHA_OPAQUE = 32  # alpha above this counts as "visible" for bbox/measurement
 
@@ -144,15 +147,20 @@ def _resize_scale(img: Image.Image, scale: float) -> Image.Image:
 
 
 def normalize_clip(
-    frames_rgba: list[np.ndarray], stance: Stance, pin_feet: bool = False, frame_h: int = FRAME
+    frames_rgba: list[np.ndarray],
+    stance: Stance,
+    pin_feet: bool = False,
+    frame_h: int = FRAME,
+    target_height: float = STANCE_HEIGHT,
 ) -> tuple[list[Image.Image], int, list[str]]:
-    """Scale every frame by the stance transform (stance height -> 204px) and
-    place it on a shared canvas (centred on the stance centre, feet at y=232).
+    """Scale every frame by the stance transform (stance height -> target_height,
+    STANCE_HEIGHT x the fighter's height ratio) and place it on a shared canvas
+    (centred on the stance centre, feet at FEET_Y).
     One shared horizontal placement for the whole clip; pin_feet (jump) uses a
     per-frame vertical placement instead. Returns (frames, canvas_width, warnings).
     """
     warnings: list[str] = []
-    scale = STANCE_HEIGHT / max(stance.body_height, 1)
+    scale = target_height / max(stance.body_height, 1)
     resized = [_resize_scale(Image.fromarray(f, "RGBA"), scale) for f in frames_rgba]
     stance_centre_resized = stance.centre_x * scale
     stance_feet_resized = stance.feet_y * scale
@@ -174,7 +182,7 @@ def normalize_clip(
             canvas_w = candidate
             break
     else:
-        warnings.append("WARN: motion is wider than 384px even widened; frames clip horizontally")
+        warnings.append(f"WARN: motion is wider than {CANVAS_WIDTHS[-1]}px even widened; frames clip horizontally")
 
     ox = round(canvas_w / 2.0 - stance_centre_resized)
 
@@ -221,40 +229,36 @@ def crop_union(frames_rgba: list[np.ndarray], pad: int = 4) -> tuple[list[Image.
 
 # --------------------------------------------------------------- pixel pass --
 
-def pixel_pass(frames: list[Image.Image], palette_colors: int = 48) -> list[Image.Image]:
-    """Downscale x2 (box filter), one shared no-dither palette across every
-    frame of the clip, upscale x2 nearest-neighbour, binary alpha (>=128).
+def pixel_pass(frames: list[Image.Image], palette_colors: int = 96) -> list[Image.Image]:
+    """One shared no-dither palette across every frame of the clip (so colours
+    don't flicker between frames) and binary alpha (>=128). Frames stay at full
+    resolution: the source art is already pixel art, and halving it lost faces.
     """
     if not frames:
         return frames
     w, h = frames[0].size
-    down_w, down_h = max(1, w // 2), max(1, h // 2)
-    downscaled = [f.resize((down_w, down_h), Image.BOX) for f in frames]
 
-    combo = Image.new("RGB", (down_w * len(downscaled), down_h))
-    for i, f in enumerate(downscaled):
+    combo = Image.new("RGB", (w * len(frames), h))
+    for i, f in enumerate(frames):
         rgb = Image.new("RGB", f.size, (0, 0, 0))
         rgb.paste(f, (0, 0), f)
-        combo.paste(rgb, (i * down_w, 0))
+        combo.paste(rgb, (i * w, 0))
     pal_source = combo.quantize(colors=palette_colors, method=Image.MEDIANCUT, dither=Image.Dither.NONE)
     shared_palette = pal_source.getpalette()
 
     out: list[Image.Image] = []
-    for f in downscaled:
+    for f in frames:
         rgb = Image.new("RGB", f.size, (0, 0, 0))
         rgb.paste(f, (0, 0), f)
-        alpha = f.split()[3]
+        alpha = f.split()[3].point(lambda a: 255 if a >= 128 else 0)
 
         pal_img = Image.new("P", (1, 1))
         pal_img.putpalette(shared_palette)
         quantized = rgb.quantize(palette=pal_img, dither=Image.Dither.NONE).convert("RGB")
 
-        up_rgb = quantized.resize((w, h), Image.NEAREST)
-        up_alpha = alpha.resize((w, h), Image.NEAREST).point(lambda a: 255 if a >= 128 else 0)
-
         result = Image.new("RGBA", (w, h))
-        result.paste(up_rgb, (0, 0))
-        result.putalpha(up_alpha)
+        result.paste(quantized, (0, 0))
+        result.putalpha(alpha)
         out.append(result)
     return out
 
