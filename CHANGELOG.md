@@ -2,6 +2,10 @@
 
 Newest first. After every `git pull`, read the entries since your last pull.
 
+## 2026-10-14: first approvals
+- 27 files approved; finals are in `approved/` (plus `characters/`). See `approved/README.md` for the full status and the re-roll list.
+- Re-roll: `elon_special`, `ambani_special_charge`, `ambani_special` (both Ambani specials on magenta). Still never sent: `elon_walk`, `elon_jump`.
+
 ## 2026-10-14: Altman reference final
 - `characters/altman_reference.png` replaced with your new magenta version. All four references are now final. Start Altman's clips from this one.
 
