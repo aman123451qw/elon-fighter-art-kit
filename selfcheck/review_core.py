@@ -251,6 +251,12 @@ def handle_fx(asset: spec.Asset, path: Path):
         results.append(("FAIL", str(exc)))
         return results, None
 
+    display = spec.FX_DISPLAY_SIZE.get(asset.name)
+    if display and max(fw, fh) > 0:
+        fx_scale = display / max(fw, fh)
+        fw, fh = max(1, round(fw * fx_scale)), max(1, round(fh * fx_scale))
+        cropped = [img.resize((fw, fh), Image.LANCZOS) for img in cropped]
+
     centres = []
     for img in cropped:
         bbox = sprites.alpha_bbox(np.array(img))
@@ -322,7 +328,7 @@ def handle_clip(asset: spec.Asset, path: Path):
     selected = [keyed[i] for i in chosen]
     target_height = sprites.STANCE_HEIGHT * spec.HEIGHT_RATIO.get(asset.fighter, 1.0)
     placed, canvas_w, norm_warnings = sprites.normalize_clip(
-        selected, stance, pin_feet=target.pin_feet, target_height=target_height
+        selected, stance, pin_feet=target.pin_feet, target_height=target_height, pin_centre=target.pin_centre
     )
     results.extend(("WARN", w) for w in norm_warnings)
 

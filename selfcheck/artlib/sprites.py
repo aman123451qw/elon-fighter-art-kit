@@ -19,7 +19,7 @@ FRAME = 360
 COLUMNS = 5
 STANCE_HEIGHT = 287
 FEET_Y = 326
-CANVAS_WIDTHS = (360, 450, 540)
+CANVAS_WIDTHS = (360, 450, 540, 630, 720)  # wide ones are for knockdowns lying flat
 
 ALPHA_OPAQUE = 32  # alpha above this counts as "visible" for bbox/measurement
 
@@ -94,13 +94,20 @@ def action_window(
 
 
 def settle_point(frames_rgba: list[np.ndarray], start: int, diff_thresh: float = 0.01) -> int:
-    """First index >= start where consecutive-frame silhouette diff goes small (motion stops)."""
+    """Index where the clip reaches its final held pose: the start of the run of
+    frames, ending at the last frame, that all match the last frame.
+
+    Comparing neighbouring frames instead stops at the first slow moment (a fall
+    that starts slowly looked "settled" after 2 frames), so compare to the end pose.
+    """
     last = len(frames_rgba) - 1
-    for i in range(start + 1, len(frames_rgba)):
-        d = diff_fraction(silhouette(frames_rgba[i]), silhouette(frames_rgba[i - 1]))
-        if d <= diff_thresh:
-            return i
-    return last
+    end_pose = silhouette(frames_rgba[last])
+    settled = last
+    for i in range(last - 1, start, -1):
+        if diff_fraction(silhouette(frames_rgba[i]), end_pose) > diff_thresh:
+            break
+        settled = i
+    return max(settled, min(start + 1, last))
 
 
 def evenly_spaced(start: int, end: int, count: int) -> list[int]:
@@ -152,12 +159,15 @@ def normalize_clip(
     pin_feet: bool = False,
     frame_h: int = FRAME,
     target_height: float = STANCE_HEIGHT,
+    pin_centre: bool = False,
 ) -> tuple[list[Image.Image], int, list[str]]:
     """Scale every frame by the stance transform (stance height -> target_height,
     STANCE_HEIGHT x the fighter's height ratio) and place it on a shared canvas
     (centred on the stance centre, feet at FEET_Y).
     One shared horizontal placement for the whole clip; pin_feet (jump) uses a
-    per-frame vertical placement instead. Returns (frames, canvas_width, warnings).
+    per-frame vertical placement instead, and pin_centre (knockdown) centres each
+    frame horizontally so a fall that drifts backward lands on the spot (the game
+    adds its own knockback). Returns (frames, canvas_width, warnings).
     """
     warnings: list[str] = []
     scale = target_height / max(stance.body_height, 1)
@@ -167,24 +177,32 @@ def normalize_clip(
 
     bboxes = [alpha_bbox(np.array(img)) for img in resized]
 
-    canvas_w = CANVAS_WIDTHS[-1]
-    for candidate in CANVAS_WIDTHS:
-        ox = candidate / 2.0 - stance_centre_resized
-        fits = True
-        for bbox in bboxes:
-            if not bbox:
-                continue
-            x0, _, x1, _ = bbox
-            if x0 + ox < 0 or x1 + ox > candidate:
-                fits = False
-                break
-        if fits:
-            canvas_w = candidate
-            break
+    if pin_centre:
+        widest = max((b[2] - b[0] for b in bboxes if b), default=0)
+        canvas_w = next((c for c in CANVAS_WIDTHS if c >= widest), CANVAS_WIDTHS[-1])
+        if widest > canvas_w:
+            warnings.append(f"WARN: motion is wider than {CANVAS_WIDTHS[-1]}px even widened; frames clip horizontally")
+        ox_per_frame = [
+            round(canvas_w / 2.0 - ((b[0] + b[2]) / 2.0 if b else stance_centre_resized)) for b in bboxes
+        ]
     else:
-        warnings.append(f"WARN: motion is wider than {CANVAS_WIDTHS[-1]}px even widened; frames clip horizontally")
-
-    ox = round(canvas_w / 2.0 - stance_centre_resized)
+        canvas_w = CANVAS_WIDTHS[-1]
+        for candidate in CANVAS_WIDTHS:
+            ox = candidate / 2.0 - stance_centre_resized
+            fits = True
+            for bbox in bboxes:
+                if not bbox:
+                    continue
+                x0, _, x1, _ = bbox
+                if x0 + ox < 0 or x1 + ox > candidate:
+                    fits = False
+                    break
+            if fits:
+                canvas_w = candidate
+                break
+        else:
+            warnings.append(f"WARN: motion is wider than {CANVAS_WIDTHS[-1]}px even widened; frames clip horizontally")
+        ox_per_frame = [round(canvas_w / 2.0 - stance_centre_resized)] * len(resized)
 
     if pin_feet:
         oy_per_frame = []
@@ -198,7 +216,7 @@ def normalize_clip(
 
     placed: list[Image.Image] = []
     clipped_vertically = False
-    for img, oy, bbox in zip(resized, oy_per_frame, bboxes):
+    for img, ox, oy, bbox in zip(resized, ox_per_frame, oy_per_frame, bboxes):
         canvas = Image.new("RGBA", (canvas_w, frame_h), (0, 0, 0, 0))
         canvas.paste(img, (ox, oy), img)
         placed.append(canvas)

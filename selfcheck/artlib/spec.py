@@ -46,6 +46,7 @@ class FrameTarget:
     mode: str  # "loop" | "hold" | "window"
     window_seconds: float | None = None  # for mode == "loop": sample within this window
     pin_feet: bool = False
+    pin_centre: bool = False  # knockdown: centre every frame so a drifting fall lands on the spot
 
 
 FRAME_TARGETS: dict[str, FrameTarget] = {
@@ -58,7 +59,7 @@ FRAME_TARGETS: dict[str, FrameTarget] = {
     "heavy": FrameTarget(10, 12, 0, "window"),
     "special_charge": FrameTarget(5, 14, 0, "hold"),
     "special": FrameTarget(12, 16, 0, "window"),
-    "knockdown": FrameTarget(10, 10, 0, "hold"),
+    "knockdown": FrameTarget(10, 10, 0, "hold", pin_feet=True, pin_centre=True),
     "fx_rocket": FrameTarget(6, 12, -1, "loop", window_seconds=1.0),
     "fx_money_bundle": FrameTarget(6, 12, -1, "loop", window_seconds=1.0),
     "fx_explosion": FrameTarget(8, 16, 0, "window"),
@@ -168,3 +169,8 @@ def expected_delivered_filename(asset: Asset) -> str:
 # all fighters draw 1:1. From the finalised references: Ambani 776, Elon 772,
 # Altman 728, Zuckerberg 712 px; Elon is kept tallest by design.
 HEIGHT_RATIO = {"elon": 1.0, "ambani": 0.98, "altman": 0.95, "zuckerberg": 0.93}
+
+
+# On-screen size (longest side, px) each effect is resized to; the game draws
+# effects 1:1. Clips arrive at video size (a 1080p rocket is ~960 px long).
+FX_DISPLAY_SIZE = {"fx_rocket": 200, "fx_explosion": 260, "fx_money_bundle": 110, "fx_money_burst": 240}
