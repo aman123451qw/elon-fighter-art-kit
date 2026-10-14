@@ -2,6 +2,9 @@
 
 Newest first. After every `git pull`, read the entries since your last pull.
 
+## 2026-10-14: Altman reference final
+- `characters/altman_reference.png` replaced with your new magenta version. All four references are now final. Start Altman's clips from this one.
+
 ## 2026-10-14: characters finalised
 - Added `characters/`: the lineup and all 4 references. Start every clip from these.
 - Proportions stay realistic as in these images (the brief's "head about 1/5" no longer applies).
