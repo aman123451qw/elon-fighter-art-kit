@@ -239,6 +239,26 @@ def handle_fx(asset: spec.Asset, path: Path):
     results.append(checks.check_fringe(sum(fringe_values) / len(fringe_values)))
 
     target = spec.FRAME_TARGETS[asset.name]
+    # Drop frames where the effect has faded into the screen colour, before picking frames.
+    # Faded = drifting toward the screen colour, or the effect's own colour shifting
+    # away from how it started (gold notes go orange before they go pink).
+    hues = [keying.median_hue(f) for f in keyed]
+    base_hues = [h for h in hues if h is not None][:10]
+    base_hue = float(np.median(base_hues)) if base_hues else None
+    faded = [
+        keying.key_tint_fraction(f, key) > 0.1
+        or (h is not None and base_hue is not None and keying.hue_distance(h, base_hue) > 12.0)
+        for f, h in zip(keyed, hues)
+    ]
+    if any(faded) and not all(faded):
+        # Cut at the first faded frame after the effect has appeared; anything
+        # after it (pink notes, dark leftovers, empty frames) is fade-out.
+        first_clean = faded.index(False)
+        cut = next((i for i in range(first_clean, len(faded)) if faded[i]), len(faded))
+        dropped = len(keyed) - cut
+        if dropped:
+            keyed = keyed[:cut]
+            results.append(("WARN", f"dropped {dropped} final frame(s) that fade into the background colour"))
     chosen, window = sprites.select_frames(keyed, target, fps)
     if target.mode != "loop":
         results.append(checks.check_action_detected(window))

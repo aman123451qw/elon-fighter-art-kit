@@ -115,3 +115,41 @@ def fringe_percent(rgba: np.ndarray, key: np.ndarray) -> float:
 
     fringe = edge & (hue_diff <= 25.0) & (sat > 0.4)
     return 100.0 * float(fringe.sum()) / n_edge
+
+
+def key_tint_fraction(rgba: np.ndarray, key: np.ndarray) -> float:
+    """Fraction of opaque pixels whose colour has drifted toward the key colour.
+
+    Effects that fade out in the video fade INTO the screen colour (money notes
+    turn pink on magenta), so late frames are mostly key-tinted and must be dropped.
+    """
+    opaque = rgba[..., 3] > 128
+    if not opaque.any():
+        return 1.0
+    rgb = rgba[..., :3][opaque].astype(np.float32) / 255.0
+    mx, mn = rgb.max(axis=1), rgb.min(axis=1)
+    diff = mx - mn
+    sat = np.where(mx > 0, diff / np.maximum(mx, 1e-6), 0.0)
+    r, g, b = rgb[:, 0], rgb[:, 1], rgb[:, 2]
+    safe = np.maximum(diff, 1e-6)
+    hue = np.where(mx == r, ((g - b) / safe) % 6, np.where(mx == g, (b - r) / safe + 2, (r - g) / safe + 4)) * 60.0
+    key_h, _, _ = colorsys.rgb_to_hsv(*(key.astype(np.float32) / 255.0))
+    hue_diff = np.abs(hue - key_h * 360.0)
+    hue_diff = np.minimum(hue_diff, 360.0 - hue_diff)
+    tinted = (hue_diff <= 60.0) & (sat > 0.35) & (diff > 0.08)
+    return float(tinted.mean())
+
+
+def median_hue(rgba: np.ndarray) -> float | None:
+    """Hue (degrees) of the median colour of the opaque pixels, or None if empty."""
+    opaque = rgba[..., 3] > 128
+    if not opaque.any():
+        return None
+    r, g, b = (np.median(rgba[..., :3][opaque], axis=0) / 255.0).tolist()
+    h, _, _ = colorsys.rgb_to_hsv(r, g, b)
+    return h * 360.0
+
+
+def hue_distance(a: float, b: float) -> float:
+    d = abs(a - b) % 360.0
+    return min(d, 360.0 - d)
