@@ -31,7 +31,7 @@ Everything should look like it came from one 16-bit console game: original pixel
 | Rule | Do | Do not |
 |---|---|---|
 | Art style | 16-bit pixel art, crisp pixels, limited colour palette, bold dark outlines | Photoreal, 3D render, smooth airbrushed look, anime |
-| Proportions | Caricature: head about 1/5 of body height, signature features slightly exaggerated (hair, smile, glasses) | Grotesque or insulting features, chibi babies, giant heads |
+| Proportions | Realistic proportions, exactly as in the finalised references (characters/ in the kit repo). Do not drift toward bigger heads | Grotesque or insulting features, chibi babies, giant heads |
 | Camera | Side view, character turned about three-quarters toward camera, full body, camera never moves | Zoom, pan, orbit, shaky cam, close-ups in move clips |
 | Facing | Every fighter faces screen LEFT in every image, clip and portrait. The game mirrors them automatically. | Mixing directions between files of one fighter |
 | Background | Solid flat chroma green #00FF00 for Elon, Ambani and Zuckerberg clips and the explosion effect. Solid flat magenta #FF00FF for ALL Altman files (his teal glow fringes on green) and for both money effects. Portraits have their own painted background (see the portraits section). | Gradients, floor shadows, scenery, vignettes behind fighters |
