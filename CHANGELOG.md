@@ -2,6 +2,12 @@
 
 Newest first. After every `git pull`, read the entries since your last pull.
 
+## 2026-10-15: fixes approved
+- Approved: `ambani_special_charge`, `ambani_special` (no glow, green background), new `stage_mumbai` (satellites moved down), `elon_walk`, `elon_jump` (trimmed to its first jump).
+- Ambani is complete. Elon needs only `elon_special` (arm at waist height). See `approved/README.md`.
+- Rule added: no glow, aura or light effects inside fighter clips; the game draws glows itself. (This replaces the earlier "money effects / glows on magenta" advice for fighter clips.)
+- Next: phase 3 (Zuckerberg + Colosseum), phase 5 (Altman + server farm), phase 6 (menus).
+
 ## 2026-10-14: first approvals
 - 27 files approved; finals are in `approved/` (plus `characters/`). See `approved/README.md` for the full status and the re-roll list.
 - Re-roll: `elon_special`, `ambani_special_charge`, `ambani_special` (both Ambani specials on magenta). Still never sent: `elon_walk`, `elon_jump`.
