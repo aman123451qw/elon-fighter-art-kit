@@ -81,9 +81,9 @@ def frame_boxes(
         "attack": None,
         "guard": None,
     }
-    if action in ("light", "heavy", "special"):
+    if action in ("light", "heavy", "special", "crouch_kick", "punch_heavy", "kick_light", "kick_heavy", "jump_kick"):
         attack = attack_box(rgba, stance_left_edge)
         boxes["attack"] = list(attack) if attack else None
-    if action == "block" and frame_index >= 1:
+    if action in ("block", "crouch_block") and frame_index >= 1:
         boxes["guard"] = list(guard_box(visual))
     return boxes

@@ -1,5 +1,5 @@
-"""The art assets for the fighting game (63 from the original brief + 39 new
-from the kit POWERS.md, part 2): name, kind, fighter, action,
+"""The art assets for the fighting game (63 from the original brief, 39 from
+the kit POWERS.md part 2, 30 from PART3.md): name, kind, fighter, action,
 expected background, phase and Drive folder. Also the per-action frame/fps
 targets. This is the single source of truth other modules read from.
 """
@@ -46,6 +46,29 @@ POWER_ACTIONS: dict[str, tuple[str, ...]] = {
 }
 POWER_ACTION_NAMES: frozenset[str] = frozenset(a for acts in POWER_ACTIONS.values() for a in acts)
 
+# ---- part 3 (kit PART3.md, phase 12): Street Fighter II moves per fighter ----
+SF2_MOVES: dict[str, tuple[str, ...]] = {
+    "elon": ("crouch", "crouch_block", "crouch_kick", "punch_heavy", "kick_light", "throw", "thrown", "jump_kick", "getup"),
+    "ambani": ("crouch", "crouch_block", "crouch_kick", "kick_light", "kick_heavy", "throw", "thrown", "jump_kick", "getup"),
+}
+SF2_MOVE_NAMES: frozenset[str] = frozenset(m for moves in SF2_MOVES.values() for m in moves)
+
+# Which frame a clip's size is measured on: "first" (starts in the fighting stance,
+# the default), "last" (ends in it: specials, powers, get up) or "reference" (never
+# stands: crouched or airborne the whole clip, sized from the approved reference).
+_STANCE_SOURCE: dict[str, str] = {
+    "special": "last",
+    **{a: "last" for a in POWER_ACTION_NAMES},
+    "getup": "last",
+    "crouch_block": "reference",
+    "crouch_kick": "reference",
+    "jump_kick": "reference",
+}
+
+
+def stance_source(action: str | None) -> str:
+    return _STANCE_SOURCE.get(action or "", "first")
+
 # Summoned objects/characters: reference image background, Drive folder and phase.
 OBJECTS: dict[str, tuple[str, str, int]] = {
     "cybertruck": ("green", "powers_elon", 7),
@@ -55,6 +78,11 @@ OBJECTS: dict[str, tuple[str, str, int]] = {
     "ghost_salman": ("black", "powers_ambani", 9),
     "antilia": ("magenta", "powers_ambani", 9),
     "tower": ("green", "powers_ambani", 9),
+    # part 3, phase 11: normal (solid) summoned characters replacing the ghosts
+    "modi": ("green", "powers_ambani", 11),
+    "salman": ("green", "powers_ambani", 11),
+    "amitshah": ("green", "powers_ambani", 11),
+    "srk": ("green", "powers_ambani", 11),
 }
 
 # Object clips -> the object they are made from.
@@ -69,6 +97,7 @@ OBJECT_CLIPS: dict[str, str] = {
     "ghost_salman_punch": "ghost_salman",
     "antilia_fly": "antilia",
     "tower_rise": "tower",
+    **{f"{who}_{clip}": who for who in ("modi", "salman", "amitshah", "srk") for clip in ("run", "punch")},
 }
 
 # Glow effects on pure black, drawn additively by the game. name -> phase.
@@ -137,6 +166,19 @@ FRAME_TARGETS: dict[str, FrameTarget] = {
     "ghost_salman_punch": FrameTarget(10, 12, 0, "window"),
     "antilia_fly": FrameTarget(8, 10, -1, "loop", window_seconds=1.0),
     "tower_rise": FrameTarget(8, 12, 0, "hold"),
+    **{f"{who}_run": FrameTarget(8, 12, -1, "loop", window_seconds=0.7) for who in ("modi", "salman", "amitshah", "srk")},
+    **{f"{who}_punch": FrameTarget(10, 12, 0, "window") for who in ("modi", "salman", "amitshah", "srk")},
+    # Street Fighter II moves
+    "crouch": FrameTarget(4, 12, 0, "hold"),
+    "crouch_block": FrameTarget(4, 10, 0, "hold"),
+    "crouch_kick": FrameTarget(10, 14, 0, "window"),
+    "punch_heavy": FrameTarget(8, 14, 0, "window"),
+    "kick_light": FrameTarget(6, 14, 0, "window"),
+    "kick_heavy": FrameTarget(10, 12, 0, "window"),
+    "throw": FrameTarget(12, 14, 0, "window"),
+    "thrown": FrameTarget(10, 12, 0, "hold", pin_feet=True, pin_centre=True),
+    "jump_kick": FrameTarget(4, 10, 0, "hold"),
+    "getup": FrameTarget(8, 12, 0, "window"),
     # glow loops and one-shots
     **{n: FrameTarget(6, 12, -1, "loop", window_seconds=0.5) for n in (
         "fx_rocket_trail", "fx_cybertruck_lights", "fx_starlink_beam", "fx_money_trail",
@@ -240,13 +282,21 @@ def _build_assets() -> dict[str, Asset]:
     for name, phase in GLOW_FX.items():
         assets[name] = Asset(name, "fx", phase, "fx", "black", ext=".mp4", accepts_folder=True)
 
+    # ---- part 3, phase 12: Street Fighter II moves ----
+    for fighter, moves in SF2_MOVES.items():
+        for move in moves:
+            assets[f"{fighter}_{move}"] = Asset(
+                f"{fighter}_{move}", "clip", 12, fighter, "green",
+                fighter=fighter, action=move, game_action=move.replace("_", "-"), ext=".mp4", accepts_folder=True,
+            )
+
     return assets
 
 
 ASSETS: dict[str, Asset] = _build_assets()
 ALL_ASSET_NAMES: tuple[str, ...] = tuple(ASSETS.keys())
 
-assert len(ASSETS) == 102, f"expected 102 assets (63 + 39 new), got {len(ASSETS)}"
+assert len(ASSETS) == 132, f"expected 132 assets (63 + 39 part 2 + 30 part 3), got {len(ASSETS)}"
 PHASES: tuple[int, ...] = tuple(sorted({a.phase for a in ASSETS.values()}))
 
 
@@ -277,7 +327,7 @@ HEIGHT_RATIO = {"elon": 1.0, "ambani": 0.98, "altman": 0.95, "zuckerberg": 0.93}
 # On-screen size (longest side, px) each effect is resized to; the game draws
 # effects 1:1. Clips arrive at video size (a 1080p rocket is ~960 px long).
 FX_DISPLAY_SIZE = {
-    "fx_rocket": 200, "fx_explosion": 260, "fx_money_bundle": 110, "fx_money_burst": 240,
+    "fx_rocket": 200, "fx_explosion": 260, "fx_money_bundle": 150, "fx_money_burst": 260,
     # glow (fighters stand ~287 px tall on screen)
     "fx_hit_glow": 120, "fx_block_glow": 120, "fx_baby_hit": 90, "fx_super_flash": 420,
     "fx_rocket_trail": 220, "fx_cybertruck_lights": 320, "fx_cybertruck_crash": 320,
@@ -298,4 +348,8 @@ OBJECT_DISPLAY: dict[str, tuple[str, int, str]] = {
     "ghost_salman": ("height", 290, "median"),
     "antilia": ("height", 280, "first"),
     "tower": ("height", 430, "max"),
+    "modi": ("height", 285, "median"),
+    "salman": ("height", 295, "median"),
+    "amitshah": ("height", 280, "median"),
+    "srk": ("height", 285, "median"),
 }

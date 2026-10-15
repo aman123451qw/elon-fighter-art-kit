@@ -34,8 +34,9 @@ PORTRAIT_SIZE = 1254
 STAGE_SIZE = (2048, 768)
 STAGE_RATIO = 8 / 3
 
-ZOOM_ACTIONS = {"idle", "walk", "block", "hit", "light", "heavy"}
-DRIFT_ACTIONS = {"idle", "walk", "light", "heavy", "block", "hit", "special_charge"}
+ZOOM_ACTIONS = {"idle", "walk", "block", "hit", "light", "heavy", "punch_heavy", "kick_light", "kick_heavy"}
+DRIFT_ACTIONS = {"idle", "walk", "light", "heavy", "block", "hit", "special_charge",
+                 "crouch", "crouch_block", "punch_heavy", "kick_light", "kick_heavy", "throw"}
 LOOP_ACTIONS = {"idle", "walk"}
 
 

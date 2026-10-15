@@ -6,6 +6,7 @@ Newest first. After every `git pull`, read the entries since your last pull.
 - **Phase 11, feedback revisions (16 files):** clearer ₹500 notes (fanned, big ₹ and 500), four normal summoned characters instead of the two ghosts (Modi ji, Salman Khan, Amit Shah, Shah Rukh Khan), Jio logo on the telecom tower. The `ghost_*` files are retired once these are approved.
 - **Phase 12, Street Fighter II moves (18 files):** crouch, crouch block, low sweep, punch and kick split, throw, thrown, jump kick, get up. Start with `elon_crouch.mp4` and wait.
 - Trackers: the brief doc's new tabs "Feedback revisions" and "SF2 moves (part 3)".
+- Self-check (`git pull`) now knows every part 3 file name; crouched and mid-air clips are sized from your approved reference.
 
 ## 2026-10-15: all 43 part 2 files approved
 - Every file in `POWERS.md` (#64 to #106) is approved, including the `elon_special` re-roll (arm at waist height) and the SPACEX rocket and rupee money redos. Finals are in `approved/` (`powers_elon/`, `powers_ambani/`, `fx/`, `elon/`).

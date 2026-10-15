@@ -119,4 +119,4 @@ Start with `elon_crouch.mp4` and wait for approval. Add to every motion prompt: 
 
 Elon needs no `_kick_heavy` (his heavy attack is already a kick) and Ambani needs no `_punch_heavy` (his heavy shove already is one).
 
-The self-check tool does not know the phase 11 and 12 file names yet; we will update it before your first upload of each. Skip it for these files until then.
+The self-check tool knows every phase 11 and 12 file name. Run it before uploading, and run each new character's `_reference.png` first so its run and punch clips are size-checked.

@@ -501,22 +501,34 @@ def handle_clip(asset: spec.Asset, path: Path):
     fringe_values = [keying.fringe_percent(f, key) for f in keyed]
     results.append(checks.check_fringe(sum(fringe_values) / len(fringe_values)))
 
-    # Specials and power clips start from the crouched charge pose and end in the
-    # fighting stance (brief), so their stance is measured on the last frame.
-    from_charge = asset.action == "special" or asset.action in spec.POWER_ACTION_NAMES
-    stance_frame = keyed[-1] if from_charge else keyed[0]
-    stance = sprites.measure_stance(stance_frame)
-    if stance is None:
-        where = "the last frame" if from_charge else "frame 1"
-        results.append(("FAIL", f"could not measure the fighting stance on {where} (nothing survived the key)"))
-        return results, None
-
     ref_path = REFERENCES_DIR / f"{asset.fighter}.json"
     reference_ratio = None
     if ref_path.exists():
         ref = sprites.Stance.from_dict(json.loads(ref_path.read_text()))
         reference_ratio = ref.body_height / ref.image_height
-    results.append(checks.check_stance_ratio(stance.body_height, stance.image_height, reference_ratio))
+
+    # Where the fighting stance is measured (spec.stance_source): specials, powers and
+    # get up end in it (last frame); crouched or airborne clips never show it, so their
+    # size comes from the approved reference; everything else starts in it.
+    source = spec.stance_source(asset.action)
+    stance_frame = keyed[-1] if source == "last" else keyed[0]
+    stance = sprites.measure_stance(stance_frame)
+    if stance is None:
+        where = "the last frame" if source == "last" else "frame 1"
+        results.append(("FAIL", f"could not measure the fighter on {where} (nothing survived the key)"))
+        return results, None
+
+    if source == "reference":
+        if reference_ratio is None:
+            results.append(("FAIL", f"this clip is sized from {asset.fighter}_reference.png: check that reference first"))
+            return results, None
+        stance = sprites.Stance(
+            round(reference_ratio * stance.image_height), stance.feet_y, stance.centre_x,
+            stance.image_width, stance.image_height,
+        )
+        results.append(("PASS", "sized from the approved reference (the fighter never stands in this clip)"))
+    else:
+        results.append(checks.check_stance_ratio(stance.body_height, stance.image_height, reference_ratio))
 
     target = spec.FRAME_TARGETS[asset.action]
     chosen, window = sprites.select_frames(keyed, target, fps)
