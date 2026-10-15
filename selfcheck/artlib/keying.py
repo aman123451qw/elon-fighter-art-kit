@@ -88,9 +88,12 @@ def chroma_key(rgb: np.ndarray, key: np.ndarray, tol: float = 70.0, soft: float 
     if key[1] >= max(key[0], key[2]):  # green screen
         rgbf[..., 1] = np.where(edge, np.minimum(g, np.maximum(r, b)), g)
     else:  # magenta screen
-        cap = np.maximum(g, np.minimum(r, b) * 0.6)
-        rgbf[..., 0] = np.where(edge, np.minimum(r, cap + 30), r)
-        rgbf[..., 2] = np.where(edge, np.minimum(b, cap + 30), b)
+        # Remove the magenta excess (red and blue above green) in the edge band.
+        # Capping red/blue part of the way left purple specks on detailed art
+        # (antilia_fly, 2026-10-15); bronze, cream, grey and gold have no excess.
+        excess = np.clip(np.minimum(r, b) - g, 0, None)
+        rgbf[..., 0] = np.where(edge, r - excess, r)
+        rgbf[..., 2] = np.where(edge, b - excess, b)
 
     out = np.dstack([np.clip(rgbf, 0, 255), alpha * 255]).astype(np.uint8)
     out[..., 3][out[..., 3] < 24] = 0  # drop isolated speckles
