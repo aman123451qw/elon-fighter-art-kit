@@ -2,6 +2,12 @@
 
 Newest first. After every `git pull`, read the entries since your last pull.
 
+## 2026-10-17: phase 12 approved (all 18 SF2 moves)
+- Approved: all 9 Elon and 9 Ambani moves (#123 to #140): crouch, crouch block, low sweep, heavy punch (Elon), light kick, heavy kick (Ambani), throw, thrown, jump kick, get up. Finals are in `approved/elon/` and `approved/ambani/`.
+- The self-check flagged the two crouch blocks ("no action detected": the forearms move inside the body outline) and Elon's get up (lying flat is wider than a standing frame). Both were our checker, not your clips; fixed on our side (`git pull` for the updated `selfcheck/`).
+- Phase 11: Amit Shah and SRK are no longer needed.
+- Nothing open. We will tell you here if anything else is needed.
+
 ## 2026-10-16: phase 11, 10 of 16 approved
 - Approved: `fx_money_bundle`, `fx_money_burst` (₹500 reads clearly now), `modi_reference`, `modi_run`, `modi_punch`, `salman_reference`, `salman_run`, `salman_punch`, `tower_reference`, `tower_rise` (Jio sign). Finals are in `approved/fx/` and `approved/powers_ambani/`. All passed self-check; Modi ji and Salman are already running in the game.
 - Still needed for phase 11: `amitshah_reference`, `amitshah_run`, `amitshah_punch`, `srk_reference`, `srk_run`, `srk_punch` (#115 to #120, prompts in `PART3.md`). They join the Whistle Summon automatically once approved.

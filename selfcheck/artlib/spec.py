@@ -136,6 +136,9 @@ class FrameTarget:
     window_seconds: float | None = None  # for mode == "loop": sample within this window
     pin_feet: bool = False
     pin_centre: bool = False  # knockdown: centre every frame so a drifting fall lands on the spot
+    # The move happens inside the body outline (crouch block: forearms come up in
+    # front of the face), so the outline never changes: use the whole clip.
+    small_motion: bool = False
 
 
 FRAME_TARGETS: dict[str, FrameTarget] = {
@@ -170,7 +173,7 @@ FRAME_TARGETS: dict[str, FrameTarget] = {
     **{f"{who}_punch": FrameTarget(10, 12, 0, "window") for who in ("modi", "salman", "amitshah", "srk")},
     # Street Fighter II moves
     "crouch": FrameTarget(4, 12, 0, "hold"),
-    "crouch_block": FrameTarget(4, 10, 0, "hold"),
+    "crouch_block": FrameTarget(4, 10, 0, "hold", small_motion=True),
     "crouch_kick": FrameTarget(10, 14, 0, "window"),
     "punch_heavy": FrameTarget(8, 14, 0, "window"),
     "kick_light": FrameTarget(6, 14, 0, "window"),
@@ -178,7 +181,9 @@ FRAME_TARGETS: dict[str, FrameTarget] = {
     "throw": FrameTarget(12, 14, 0, "window"),
     "thrown": FrameTarget(10, 12, 0, "hold", pin_feet=True, pin_centre=True),
     "jump_kick": FrameTarget(4, 10, 0, "hold"),
-    "getup": FrameTarget(8, 12, 0, "window"),
+    # Starts lying flat (wider than a standing frame) and kips up: centre each frame
+    # and keep the lowest point on the floor, like knockdown.
+    "getup": FrameTarget(8, 12, 0, "window", pin_feet=True, pin_centre=True),
     # glow loops and one-shots
     **{n: FrameTarget(6, 12, -1, "loop", window_seconds=0.5) for n in (
         "fx_rocket_trail", "fx_cybertruck_lights", "fx_starlink_beam", "fx_money_trail",

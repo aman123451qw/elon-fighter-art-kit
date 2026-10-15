@@ -135,11 +135,13 @@ def select_frames(
         return evenly_spaced(0, end, target.frames), None
 
     window = action_window(frames_rgba)
+    if window is None and target.small_motion:
+        window = (0, n - 1)
     if window is None:
         return [], None
     start, end = window
 
-    if target.mode == "hold":
+    if target.mode == "hold" and not target.small_motion:
         end = settle_point(frames_rgba, start)
 
     return evenly_spaced(start, end, target.frames), (start, end)
