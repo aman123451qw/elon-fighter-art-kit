@@ -4,6 +4,7 @@ You are helping a filmmaker produce all the art for **Elon Fighter**, a 2D pixel
 
 ## Read these first, in this order
 1. `BRIEF.md`: the full art brief. It is the source of truth. If anything here disagrees with it, the brief wins.
+   Then `POWERS.md` (part 2, 2026-10-15): Elon vs Ambani only, new powers, black glow files. Where it differs from `BRIEF.md`, `POWERS.md` wins.
 2. `CHANGELOG.md`: what changed since the last pull. Read it after every `git pull` and tell the filmmaker about anything that affects files he already made.
 3. `ASSETS.md`: all 63 files, in the order to make them.
 4. `PROMPTS.md`: a ready prompt for every file.

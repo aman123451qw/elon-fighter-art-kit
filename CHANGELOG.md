@@ -2,6 +2,13 @@
 
 Newest first. After every `git pull`, read the entries since your last pull.
 
+## 2026-10-15: new powers (read `POWERS.md`)
+- The game is now **Elon vs Ambani only**. Stop all Zuckerberg and Altman work.
+- Each fighter gets 4 powers. 43 new files, phases 7 to 10, all listed with prompts in `POWERS.md`.
+- New rule: glow, beams, trails, sparks and the two ghosts are made on **pure black** `#000000` (the game blends them as light). Fighter clips and objects stay glow-free on green (magenta for money and Antilia).
+- Branding is now allowed only where `POWERS.md` asks for it (SPACEX and Tesla on the rocket, STARLINK, ₹500 notes, Modi ji and Salman Khan ghosts).
+- Start with phase 7 (3 test files) and wait for approval.
+
 ## 2026-10-15: fixes approved
 - Approved: `ambani_special_charge`, `ambani_special` (no glow, green background), new `stage_mumbai` (satellites moved down), `elon_walk`, `elon_jump` (trimmed to its first jump).
 - Ambani is complete. Elon needs only `elon_special` (arm at waist height). See `approved/README.md`.
