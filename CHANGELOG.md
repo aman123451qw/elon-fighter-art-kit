@@ -2,6 +2,11 @@
 
 Newest first. After every `git pull`, read the entries since your last pull.
 
+## 2026-10-16: phase 11, 10 of 16 approved
+- Approved: `fx_money_bundle`, `fx_money_burst` (₹500 reads clearly now), `modi_reference`, `modi_run`, `modi_punch`, `salman_reference`, `salman_run`, `salman_punch`, `tower_reference`, `tower_rise` (Jio sign). Finals are in `approved/fx/` and `approved/powers_ambani/`. All passed self-check; Modi ji and Salman are already running in the game.
+- Still needed for phase 11: `amitshah_reference`, `amitshah_run`, `amitshah_punch`, `srk_reference`, `srk_run`, `srk_punch` (#115 to #120, prompts in `PART3.md`). They join the Whistle Summon automatically once approved.
+- Then phase 12 (SF2 moves): start with `elon_crouch.mp4` and wait.
+
 ## 2026-10-16: part 3 (read `PART3.md`)
 - **Phase 11, feedback revisions (16 files):** clearer ₹500 notes (fanned, big ₹ and 500), four normal summoned characters instead of the two ghosts (Modi ji, Salman Khan, Amit Shah, Shah Rukh Khan), Jio logo on the telecom tower. The `ghost_*` files are retired once these are approved.
 - **Phase 12, Street Fighter II moves (18 files):** crouch, crouch block, low sweep, punch and kick split, throw, thrown, jump kick, get up. Start with `elon_crouch.mp4` and wait.
