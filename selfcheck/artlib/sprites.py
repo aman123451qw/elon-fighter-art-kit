@@ -341,3 +341,63 @@ def loop_seam_diff(first: Image.Image, last: Image.Image) -> float:
     a = np.array(first.convert("RGB"), dtype=np.float32)
     b = np.array(last.convert("RGB"), dtype=np.float32)
     return float(np.mean(np.abs(a - b)))
+
+
+# ------------------------------------------------- lettering-safe mirroring --
+
+def lettering_box(rgba: np.ndarray, gap: int = 8, min_width: int = 20) -> tuple[int, int, int, int] | None:
+    """(x0, y0, x1, y1), inclusive, of the dark lettering painted on a light body
+    (e.g. SPACEX on the rocket): the widest run of columns holding dark pixels
+    inside the rows where the light body is widest. None if there is none.
+    """
+    a = rgba[..., 3] > 0
+    rgb = rgba[..., :3].astype(int)
+    light = a & (rgb.min(axis=2) > 200)
+    counts = light.sum(axis=1)
+    if counts.max() == 0:
+        return None
+    body_rows = np.where(counts > 0.3 * counts.max())[0]
+    top, bottom = int(body_rows.min()) + 5, int(body_rows.max()) - 5
+    if bottom <= top:
+        return None
+    # Lettering is near-black; seams and rings are mid-grey (77+ on the rocket).
+    dark = a & (rgb.max(axis=2) < 60)
+    band = dark[top:bottom + 1]
+    # Seams and rings run the full height of the body; letters do not.
+    lettered = band.any(axis=0) & (band.mean(axis=0) < 0.85)
+    cols = np.where(lettered)[0]
+    if len(cols) == 0:
+        return None
+    runs, start, prev = [], cols[0], cols[0]
+    for c in cols[1:]:
+        if c - prev > gap:
+            runs.append((start, prev))
+            start = c
+        prev = c
+    runs.append((start, prev))
+    x0, x1 = max(runs, key=lambda r: r[1] - r[0])
+    if x1 - x0 + 1 < min_width:
+        return None
+    # Rows: over the whole body height, so letter tops and bottoms are included.
+    body_top, body_bottom = int(body_rows.min()), int(body_rows.max())
+    rows = np.where(dark[body_top:body_bottom + 1, x0:x1 + 1].any(axis=1))[0]
+    return int(x0), int(body_top + rows.min()), int(x1), int(body_top + rows.max())
+
+
+def mirror_keep_lettering(frames: list[Image.Image]) -> list[Image.Image]:
+    """Mirror frames left-right (an effect flying the other way) but flip the
+    lettering back so it still reads correctly. The box comes from frame 0.
+    """
+    if not frames:
+        return frames
+    box = lettering_box(np.array(frames[0]))
+    out = []
+    for f in frames:
+        arr = np.array(f)[:, ::-1].copy()
+        if box:
+            w = arr.shape[1]
+            x0, y0, x1, y1 = box
+            mx0, mx1 = w - 1 - x1, w - 1 - x0
+            arr[y0:y1 + 1, mx0:mx1 + 1] = arr[y0:y1 + 1, mx0:mx1 + 1][:, ::-1]
+        out.append(Image.fromarray(arr, "RGBA"))
+    return out

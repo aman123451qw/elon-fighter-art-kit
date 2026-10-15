@@ -81,6 +81,10 @@ GLOW_FX: dict[str, int] = {
     "fx_block_glow": 10, "fx_super_flash": 10,
 }
 
+# Effects with painted lettering: the converter also writes a right-facing copy
+# (`<name>_right`) with the letters flipped back, because the game cannot mirror them.
+LETTERED_FX: frozenset[str] = frozenset({"fx_rocket"})
+
 # Glow files allowed to touch these frame edges (a beam or trail runs edge to edge).
 GLOW_EDGES_ALLOWED: dict[str, tuple[str, ...]] = {
     "fx_starlink_beam": ("top", "bottom"),

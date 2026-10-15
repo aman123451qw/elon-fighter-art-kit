@@ -369,6 +369,15 @@ def _finish_fx(asset, results, frames, keyed, target, fps, glow: bool):
         manifest.backup_asset(asset.name, [game_path], man, kp)
         game_path.parent.mkdir(parents=True, exist_ok=True)
         sheet.save(game_path)
+        if asset.name in spec.LETTERED_FX:
+            # Right-facing copy with the lettering flipped back (mirroring would show it backwards).
+            right_name = f"{asset.name}_right"
+            sprites.pack_sheet(sprites.mirror_keep_lettering(pixelated)).save(game_path.parent / f"{right_name}.png")
+            manifest.set_entry(man, ["fx", right_name], {
+                "url": f"/assets/fx/{right_name}.png",
+                "frames": len(pixelated), "frameRate": target.fps, "repeat": target.repeat,
+                "frameWidth": fw, "frameHeight": fh, "source": "delivered", "mirrorOf": asset.name,
+            })
         manifest.set_entry(man, kp, {
             "url": f"/assets/fx/{asset.name}.png",
             "frames": len(pixelated), "frameRate": target.fps, "repeat": target.repeat,
