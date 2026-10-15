@@ -203,6 +203,18 @@ def handle_menu(asset: spec.Asset, path: Path):
     rgb = np.array(img.convert("RGB"))
     h, w = rgb.shape[:2]
     results = [checks.check_menu_size(asset.name, w, h)]
+    has_alpha = img.mode in ("RGBA", "LA") or "transparency" in img.info
+
+    # The logo may arrive transparent or on the green screen (PLAN.md section 4): key the green out.
+    keyed_logo = None
+    if asset.name == "logo" and not has_alpha:
+        key = keying.detect_key_color(rgb)
+        name, distance = keying.closest_expected_key(key)
+        if name == "green" and distance < 60:
+            keyed_logo = Image.fromarray(keying.chroma_key(rgb, key))
+            results.append(("PASS", "logo green background keyed to transparent"))
+        else:
+            results.append(("WARN", "logo has no transparency and no green background; it will show as a box"))
 
     def convert(full_results):
         game_path = game_paths_for(asset)[0]
@@ -210,8 +222,10 @@ def handle_menu(asset: spec.Asset, path: Path):
         kp = key_path_for(asset)
         manifest.backup_asset(asset.name, [game_path], man, kp)
         game_path.parent.mkdir(parents=True, exist_ok=True)
-        has_alpha = img.mode in ("RGBA", "LA") or "transparency" in img.info
-        (img.convert("RGBA") if has_alpha else img.convert("RGB")).save(game_path)
+        if keyed_logo is not None:
+            keyed_logo.save(game_path)
+        else:
+            (img.convert("RGBA") if has_alpha else img.convert("RGB")).save(game_path)
         manifest.set_entry(man, kp, {"url": f"/assets/menus/{asset.name}.png", "width": w, "height": h, "source": "delivered"})
         manifest.save_manifest(man)
         write_review_out(asset.name, full_results)
