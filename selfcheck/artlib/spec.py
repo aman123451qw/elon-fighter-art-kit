@@ -44,6 +44,7 @@ POWER_ACTIONS: dict[str, tuple[str, ...]] = {
     "elon": ("babies", "cybertruck", "starlink"),
     "ambani": ("whistle", "antilia", "towers"),
 }
+POWER_ACTION_NAMES: frozenset[str] = frozenset(a for acts in POWER_ACTIONS.values() for a in acts)
 
 # Summoned objects/characters: reference image background, Drive folder and phase.
 OBJECTS: dict[str, tuple[str, str, int]] = {

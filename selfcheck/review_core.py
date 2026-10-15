@@ -492,9 +492,14 @@ def handle_clip(asset: spec.Asset, path: Path):
     fringe_values = [keying.fringe_percent(f, key) for f in keyed]
     results.append(checks.check_fringe(sum(fringe_values) / len(fringe_values)))
 
-    stance = sprites.measure_stance(keyed[0])
+    # Specials and power clips start from the crouched charge pose and end in the
+    # fighting stance (brief), so their stance is measured on the last frame.
+    from_charge = asset.action == "special" or asset.action in spec.POWER_ACTION_NAMES
+    stance_frame = keyed[-1] if from_charge else keyed[0]
+    stance = sprites.measure_stance(stance_frame)
     if stance is None:
-        results.append(("FAIL", "could not measure the fighting stance on frame 1 (nothing survived the key)"))
+        where = "the last frame" if from_charge else "frame 1"
+        results.append(("FAIL", f"could not measure the fighting stance on {where} (nothing survived the key)"))
         return results, None
 
     ref_path = REFERENCES_DIR / f"{asset.fighter}.json"
