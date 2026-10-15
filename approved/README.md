@@ -2,34 +2,20 @@
 
 Final, approved deliveries. Do not change these; if one needs redoing we will say so in `CHANGELOG.md`. The lineup and all 4 references are in `characters/`.
 
-## Status (2026-10-15)
+## Status (2026-10-15, after part 2)
+
+The game is Elon vs Ambani only (see `POWERS.md`). Everything for it is approved.
 
 | Fighter / group | Approved | Still needed |
 |---|---|---|
-| Elon | idle, walk, jump, heavy, block, hit, light, special_charge, knockdown, portrait | **special** (re-roll: arm thrust at waist height) |
+| Elon | idle, walk, jump, heavy, block, hit, light, special_charge, **special (waist-height re-roll)**, knockdown, portrait | none |
 | Ambani | idle, walk, jump, block, hit, light, heavy, special_charge, special, knockdown, portrait | none |
-| Zuckerberg | reference | everything else (phase 3) |
-| Altman | reference | everything else (phase 5) |
-| Effects | fx_rocket, fx_explosion, fx_money_bundle, fx_money_burst | none |
-| Stages | stage_mumbai | stage_colosseum (phase 3), stage_server_farm (phase 5) |
-| Menus | none yet | all 7 (phase 6) |
+| Elon powers (`powers_elon/`) | elon_babies, elon_cybertruck, elon_starlink, cybertruck_reference, cybertruck_drive, baby_reference, baby_run, baby_punch, starlink_reference, starlink_sat | none |
+| Ambani powers (`powers_ambani/`) | ambani_whistle, ambani_antilia, ambani_towers, ghost_modi_reference, ghost_modi_run, ghost_modi_punch, ghost_salman_reference, ghost_salman_run, ghost_salman_punch, antilia_reference, antilia_fly, tower_reference, tower_rise | none |
+| Effects (`fx/`) | fx_rocket (SPACEX redo), fx_explosion, fx_money_bundle (rupee redo), fx_money_burst (rupee redo), and all 16 glow files on black | none |
+| Stages | stage_mumbai | none |
+| Zuckerberg, Altman | dropped from the game | none |
 
 Note: `elon_jump.mp4` here is your clip trimmed to its first jump (the original had two jumps back to back). One action per clip, please.
 
-## Re-roll still open
-
-| File | Problem | Change |
-|---|---|---|
-| `elon_special.mp4` | The arm thrust is at chest height; the rocket must leave at waist height so it can be jumped over. | Start from the last frame of `elon_special_charge`. One arm thrust straight forward at WAIST height, hold briefly, back to stance. No second punch, no sparks, no effects. |
-
-Prompt:
-
-```
-[start from the last frame of elon_special_charge.mp4] Elon rises from the crouch and thrusts one arm straight forward toward the left at WAIST height in a single motion, holds the arm out briefly, returns to fighting stance, no second punch, no sparks, no effects, locked static camera, character stays on the same spot, solid flat #00FF00 green background, side view facing left, crisp pixel art, no motion blur
-```
-
-## Please
-- Use exact file names. Re-sends arrived as `(1)`, `(2)`, `(3)` and fail the check.
-- Make sure a re-send is a new render.
-- One action per clip.
-- No glow, aura or light effects inside fighter clips: glows cannot be separated from the green screen. The game draws its own glows.
+No re-rolls are open.

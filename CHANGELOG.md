@@ -2,6 +2,12 @@
 
 Newest first. After every `git pull`, read the entries since your last pull.
 
+## 2026-10-15: all 43 part 2 files approved
+- Every file in `POWERS.md` (#64 to #106) is approved, including the `elon_special` re-roll (arm at waist height) and the SPACEX rocket and rupee money redos. Finals are in `approved/` (`powers_elon/`, `powers_ambani/`, `fx/`, `elon/`).
+- `antilia_fly` and `fx_money_burst` had pink edges from the magenta screen; we fixed that in our converter, no re-roll needed.
+- The new `baby_reference` (full-length sleepsuit) is the approved baby.
+- Nothing open. We will tell you here if anything else is needed.
+
 ## 2026-10-15: self-check knows the new files
 - `git pull`, then run `python selfcheck/selfcheck.py <file>` on any part 2 file: glow files on black, object and ghost references, object clips and the power clips are all checked now.
 - Run each object's `_reference.png` first (like the fighters) so its clips are checked for size.
