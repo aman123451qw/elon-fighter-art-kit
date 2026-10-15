@@ -10,15 +10,15 @@ You are helping a filmmaker produce all the art for **Elon Fighter**, a 2D pixel
 4. `PROMPTS.md`: a ready prompt for every file.
 5. `examples/`: reference art from the game template this project started from. Use it to understand the FORMAT (how a game-ready sheet, stance, portrait, stage and HUD look). Do not copy those characters; ours are new caricatures.
 
-## Hard rules (from the brief)
+## Hard rules (from the brief, as updated by POWERS.md and PART3.md)
 - Exact file names from `ASSETS.md`, all lower case. Alternate takes go in `_rejects/`, never `v2` or `final`.
 - Every fighter faces screen LEFT in every image, clip and portrait.
 - Backgrounds: green `#00FF00` for Elon, Zuckerberg, Ambani, the rocket and the explosion. Magenta `#FF00FF` for every Altman file and both money effects. Portraits have a painted background. Stages and menus are full scenes.
 - Every clip starts from that fighter's approved reference image. Exception: the special clip starts from the last frame of the special charge clip.
 - Everything happens on the spot. No drifting, staggering back or lunging across the frame.
 - No props that appear in one clip and vanish in the next. Empty hands in the reference.
-- No crouch clips. 10 clips per fighter.
-- No text in any image except `logo.png`. No real logos or real banknotes.
+- Crouch clips ARE needed now (PART3.md phase 12): crouch, crouch block, low sweep. The fighter list is Elon and Ambani only.
+- No text in any image except `logo.png`, EXCEPT where POWERS.md / PART3.md ask for it: SPACEX and the Tesla T on the rocket, STARLINK, ₹500 notes, the Jio sign on the tower.
 - Clips: the action happens once in the first 2 to 3 seconds; a 5 s tool clip is fine.
 
 ## The approval loop (one file at a time)
