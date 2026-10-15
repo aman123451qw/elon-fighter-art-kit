@@ -2,6 +2,10 @@
 
 Newest first. After every `git pull`, read the entries since your last pull.
 
+## 2026-10-15: self-check knows the new files
+- `git pull`, then run `python selfcheck/selfcheck.py <file>` on any part 2 file: glow files on black, object and ghost references, object clips and the power clips are all checked now.
+- Run each object's `_reference.png` first (like the fighters) so its clips are checked for size.
+
 ## 2026-10-15: new powers (read `POWERS.md`)
 - The game is now **Elon vs Ambani only**. Stop all Zuckerberg and Altman work.
 - Each fighter gets 4 powers. 43 new files, phases 7 to 10, all listed with prompts in `POWERS.md`.

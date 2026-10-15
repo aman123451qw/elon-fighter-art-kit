@@ -6,6 +6,8 @@ game team runs, prints PASS / WARN / FAIL, and changes nothing in any game.
 Usage:
   python selfcheck/selfcheck.py elon_reference.png   # run this first for each fighter
   python selfcheck/selfcheck.py elon_idle.mp4
+  python selfcheck/selfcheck.py cybertruck_reference.png   # objects too: run the reference first
+  python selfcheck/selfcheck.py fx_hit_glow.mp4            # glow files on black are checked too
   python selfcheck/selfcheck.py some_folder_of_pngs/elon_walk
 
 Checking a fighter's reference image saves its stance size locally, so that
@@ -47,9 +49,9 @@ def main() -> None:
         print(f"{level}: {message}")
 
     # Only reference images store something (their stance size, locally).
-    if asset is not None and asset.kind == "reference" and not failed and convert is not None:
+    if asset is not None and asset.kind in ("reference", "object_reference") and not failed and convert is not None:
         convert(results)
-        print("(saved this fighter's stance size for checking its clips)")
+        print("(saved this reference's size for checking its clips)")
 
     print("\nRESULT: " + ("FIX the FAIL lines before uploading" if failed else "OK to upload (mention any WARN in the tracker comment)"))
     sys.exit(1 if failed else 0)

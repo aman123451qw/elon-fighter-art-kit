@@ -58,7 +58,7 @@ A see-through glow made on green or magenta leaves a coloured halo when we remov
 
 The ghosts are made the same way, so they come out see-through and glowing. Draw them as figures made of light, not as solid people.
 
-The self-check tool does not know black files yet. Skip it for black files until we update the kit; we check them on our side.
+The self-check tool knows every new file (black glow files, objects, ghosts, power clips): run it before uploading, and run each object's `_reference.png` first so its clips get size-checked.
 
 ## File specs
 

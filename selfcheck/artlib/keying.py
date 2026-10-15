@@ -8,10 +8,14 @@ import colorsys
 
 import numpy as np
 
-from .spec import GREEN, MAGENTA
+from .spec import BLACK, GREEN, MAGENTA
 
 GREEN_ARR = np.array(GREEN, dtype=np.float32)
 MAGENTA_ARR = np.array(MAGENTA, dtype=np.float32)
+BLACK_ARR = np.array(BLACK, dtype=np.float32)
+
+# Glow on black: a pixel brighter than this (max channel) is part of the effect.
+BLACK_THRESHOLD = 14
 
 
 def detect_key_color(rgb: np.ndarray) -> np.ndarray:
@@ -27,10 +31,30 @@ def color_distance(a: np.ndarray, b: np.ndarray) -> float:
 
 
 def closest_expected_key(detected: np.ndarray) -> tuple[str, float]:
-    """Which of green/magenta the detected colour is nearer to, and the distance."""
-    dg = color_distance(detected, GREEN_ARR)
-    dm = color_distance(detected, MAGENTA_ARR)
-    return ("green", dg) if dg <= dm else ("magenta", dm)
+    """Which of green/magenta/black the detected colour is nearest to, and the distance."""
+    options = [
+        ("green", color_distance(detected, GREEN_ARR)),
+        ("magenta", color_distance(detected, MAGENTA_ARR)),
+        ("black", color_distance(detected, BLACK_ARR)),
+    ]
+    return min(options, key=lambda o: o[1])
+
+
+def black_key(rgb: np.ndarray, threshold: int = BLACK_THRESHOLD) -> np.ndarray:
+    """RGBA for a glow made on pure black. The game draws these additively, so
+    the colour is kept as is (black adds nothing); alpha only marks where the
+    effect is, for cropping and frame selection.
+    """
+    bright = rgb.max(axis=2) > threshold
+    alpha = np.where(bright, 255, 0).astype(np.uint8)
+    return np.dstack([rgb.astype(np.uint8), alpha])
+
+
+def key_frame(rgb: np.ndarray, background: str) -> np.ndarray:
+    """Key one frame by the asset's background: black glow or a green/magenta screen."""
+    if background == "black":
+        return black_key(rgb)
+    return chroma_key(rgb, detect_key_color(rgb))
 
 
 SPILL_BAND_PX = 3

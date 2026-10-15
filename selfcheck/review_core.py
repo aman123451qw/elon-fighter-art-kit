@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Art review CLI for the fighting game's 63 delivered assets (see
+Art review CLI for the fighting game's delivered assets (63 + 39 from part 2) (see
 plans/01-artwork/PLAN.md). Runs the automatic checks on a delivered file,
 converts it into game assets when it's clean, and tracks approve/reject
 state. Also rebuilds the manifest from whatever stand-in art already lives
@@ -33,6 +33,7 @@ TOOLS_DIR = Path(__file__).resolve().parent
 PUBLIC_ASSETS = manifest.PUBLIC_ASSETS
 REVIEW_OUT_DIR = TOOLS_DIR / "review_out"
 REFERENCES_DIR = REVIEW_OUT_DIR / "references"
+OBJECT_REFERENCES_DIR = REFERENCES_DIR / "objects"
 REVIEW_STATE_PATH = TOOLS_DIR / "review_state.json"
 REVIEW_CONFIG_PATH = TOOLS_DIR / "review_config.json"
 REVIEW_URL_HINT = "http://127.0.0.1:5180/?review"
@@ -87,7 +88,9 @@ def key_path_for(asset: spec.Asset) -> list[str]:
         return ["stages", asset.name]
     if asset.kind == "menu":
         return ["menus", asset.name]
-    return []  # lineup / reference have no game-side manifest entry
+    if asset.kind == "object_clip":
+        return ["objects", asset.name]
+    return []  # lineup / references have no game-side manifest entry
 
 
 def game_paths_for(asset: spec.Asset) -> list[Path]:
@@ -101,6 +104,8 @@ def game_paths_for(asset: spec.Asset) -> list[Path]:
         return [PUBLIC_ASSETS / "stages" / f"{asset.name}.png"]
     if asset.kind == "menu":
         return [PUBLIC_ASSETS / "menus" / f"{asset.name}.png"]
+    if asset.kind == "object_clip":
+        return [PUBLIC_ASSETS / "objects" / f"{asset.name}.png"]
     return []
 
 
@@ -153,6 +158,48 @@ def handle_reference(asset: spec.Asset, path: Path):
             return
         REFERENCES_DIR.mkdir(parents=True, exist_ok=True)
         (REFERENCES_DIR / f"{asset.fighter}.json").write_text(json.dumps(stance.to_dict(), indent=2))
+
+    return results, convert  # measurements only, no game files
+
+
+def _fill(rgba: np.ndarray) -> tuple[float, float] | None:
+    """How much of the frame the visible object fills: (width, height) fractions."""
+    bbox = sprites.alpha_bbox(rgba)
+    if not bbox:
+        return None
+    h, w = rgba.shape[:2]
+    x0, y0, x1, y1 = bbox
+    return (x1 - x0) / w, (y1 - y0) / h
+
+
+def _object_reference_fill(obj: str) -> tuple[float, float] | None:
+    ref_path = OBJECT_REFERENCES_DIR / f"{obj}.json"
+    if not ref_path.exists():
+        return None
+    data = json.loads(ref_path.read_text())
+    return data["fillWidth"], data["fillHeight"]
+
+
+def handle_object_reference(asset: spec.Asset, path: Path):
+    """A summoned object or character (part 2): flat background (green, magenta or
+    black), size, margin. Stores how much of the frame it fills, to check its clips.
+    """
+    rgb = media.load_image_rgb(path)
+    h, w = rgb.shape[:2]
+    results = [checks.check_reference_size(w, h), checks.check_flat_background(rgb, asset.background)]
+    rgba = keying.key_frame(rgb, asset.background)
+    results.append(checks.check_margin(rgba))
+    fill = _fill(rgba)
+    if fill:
+        results.append(("PASS", f"object fills {fill[0]:.0%} of the width and {fill[1]:.0%} of the height"))
+
+    def convert(_full_results):
+        if fill is None:
+            return
+        OBJECT_REFERENCES_DIR.mkdir(parents=True, exist_ok=True)
+        (OBJECT_REFERENCES_DIR / f"{asset.obj}.json").write_text(
+            json.dumps({"fillWidth": fill[0], "fillHeight": fill[1], "imageWidth": w, "imageHeight": h}, indent=2)
+        )
 
     return results, convert  # measurements only, no game files
 
@@ -247,12 +294,18 @@ def handle_fx(asset: spec.Asset, path: Path):
     results.append(checks.check_fps(fps))
     key = keying.detect_key_color(frames[0])
     results.append(checks.check_background(key, asset.background))
+    glow = asset.background == "black"
+    target = spec.FRAME_TARGETS[asset.name]
+
+    if glow:
+        # Glow on black (part 2): no keying, black is dropped by the game's additive blend.
+        keyed = [keying.black_key(f) for f in frames]
+        return _finish_fx(asset, results, frames, keyed, target, fps, glow=True)
 
     keyed = [keying.chroma_key(f, key) for f in frames]
     fringe_values = [keying.fringe_percent(f, key) for f in keyed]
     results.append(checks.check_fringe(sum(fringe_values) / len(fringe_values)))
 
-    target = spec.FRAME_TARGETS[asset.name]
     # Drop frames where the effect has faded into the screen colour, before picking frames.
     # Faded = drifting toward the screen colour, or the effect's own colour shifting
     # away from how it started (gold notes go orange before they go pink).
@@ -273,6 +326,11 @@ def handle_fx(asset: spec.Asset, path: Path):
         if dropped:
             keyed = keyed[:cut]
             results.append(("WARN", f"dropped {dropped} final frame(s) that fade into the background colour"))
+    return _finish_fx(asset, results, frames, keyed, target, fps, glow=False)
+
+
+def _finish_fx(asset, results, frames, keyed, target, fps, glow: bool):
+    """Shared tail of the fx handler: pick frames, crop, resize to on-screen size, pack."""
     chosen, window = sprites.select_frames(keyed, target, fps)
     if target.mode != "loop":
         results.append(checks.check_action_detected(window))
@@ -298,6 +356,8 @@ def handle_fx(asset: spec.Asset, path: Path):
             x0, y0, x1, y1 = bbox
             centres.append(((x0 + x1) / 2, (y0 + y1) / 2))
     results.append(checks.check_fx_centre_drift(centres, fw, fh))
+    if glow:
+        results.append(checks.check_edge_clear([keyed[i] for i in chosen], spec.GLOW_EDGES_ALLOWED.get(asset.name, ())))
 
     pixelated = sprites.pixel_pass(cropped)
 
@@ -313,6 +373,99 @@ def handle_fx(asset: spec.Asset, path: Path):
             "url": f"/assets/fx/{asset.name}.png",
             "frames": len(pixelated), "frameRate": target.fps, "repeat": target.repeat,
             "frameWidth": fw, "frameHeight": fh, "source": "delivered",
+            **({"blend": "add"} if glow else {}),
+        })
+        manifest.save_manifest(man)
+        write_review_out(asset.name, full_results, frames=frames, chosen=chosen, placed=pixelated, fps=target.fps)
+
+    return results, convert
+
+
+def handle_object_clip(asset: spec.Asset, path: Path):
+    """A summoned object or character clip (part 2): stays on the spot, keyed on
+    its background (black = additive glow), scaled to its on-screen size, packed.
+    """
+    try:
+        frames, fps = media.load_clip(path)
+    except media.ClipLoadError as exc:
+        return [("FAIL", str(exc))], None
+
+    results = [checks.check_readable(len(frames))]
+    if not frames:
+        return results, None
+    h, w = frames[0].shape[:2]
+    results.append(checks.check_resolution(w, h))
+    results.append(checks.check_fps(fps))
+    key = keying.detect_key_color(frames[0])
+    results.append(checks.check_background(key, asset.background))
+    glow = asset.background == "black"
+
+    keyed = [keying.key_frame(f, asset.background) for f in frames]
+    if not glow:
+        fringe_values = [keying.fringe_percent(f, key) for f in keyed]
+        results.append(checks.check_fringe(sum(fringe_values) / len(fringe_values)))
+
+    target = spec.FRAME_TARGETS[asset.name]
+    chosen, window = sprites.select_frames(keyed, target, fps)
+    if target.mode != "loop":
+        results.append(checks.check_action_detected(window))
+    if not chosen:
+        return results, None
+    selected = [keyed[i] for i in chosen]
+
+    rises = asset.name == "tower_rise"  # grows up out of the bottom edge
+    results.append(checks.check_edge_clear(selected, ("bottom",) if rises else ()))
+
+    axis, display_px, basis = spec.OBJECT_DISPLAY[asset.obj]
+    if not rises:
+        fills = [f for f in (_fill(s) for s in selected) if f]
+        if fills:
+            median_fill = (float(np.median([f[0] for f in fills])), float(np.median([f[1] for f in fills])))
+            results.append(checks.check_object_size(median_fill, _object_reference_fill(asset.obj), axis))
+
+    try:
+        cropped, (fw, fh) = sprites.crop_union(selected)
+    except ValueError as exc:
+        results.append(("FAIL", str(exc)))
+        return results, None
+
+    measures = []
+    for img in cropped:
+        bbox = sprites.alpha_bbox(np.array(img))
+        if bbox:
+            measures.append(bbox[2] - bbox[0] if axis == "width" else bbox[3] - bbox[1])
+    if not measures:
+        results.append(("FAIL", "nothing visible in the selected frames"))
+        return results, None
+    base = {"first": measures[0], "max": max(measures), "median": float(np.median(measures))}[basis]
+    scale = display_px / max(1.0, base)
+    fw, fh = max(1, round(fw * scale)), max(1, round(fh * scale))
+    cropped = [img.resize((fw, fh), Image.LANCZOS) for img in cropped]
+
+    if target.mode == "loop":
+        centres = []
+        for img in cropped:
+            bbox = sprites.alpha_bbox(np.array(img))
+            if bbox:
+                x0, y0, x1, y1 = bbox
+                centres.append(((x0 + x1) / 2, (y0 + y1) / 2))
+        results.append(checks.check_fx_centre_drift(centres, fw, fh))
+
+    pixelated = sprites.pixel_pass(cropped)
+
+    def convert(full_results):
+        sheet = sprites.pack_sheet(pixelated)
+        game_path = game_paths_for(asset)[0]
+        man = manifest.load_manifest()
+        kp = key_path_for(asset)
+        manifest.backup_asset(asset.name, [game_path], man, kp)
+        game_path.parent.mkdir(parents=True, exist_ok=True)
+        sheet.save(game_path)
+        manifest.set_entry(man, kp, {
+            "url": f"/assets/objects/{asset.name}.png", "object": asset.obj,
+            "frames": len(pixelated), "frameRate": target.fps, "repeat": target.repeat,
+            "frameWidth": fw, "frameHeight": fh, "source": "delivered",
+            **({"blend": "add"} if glow else {}),
         })
         manifest.save_manifest(man)
         write_review_out(asset.name, full_results, frames=frames, chosen=chosen, placed=pixelated, fps=target.fps)
@@ -414,6 +567,8 @@ HANDLERS = {
     "portrait": handle_portrait,
     "stage": handle_stage,
     "menu": handle_menu,
+    "object_reference": handle_object_reference,
+    "object_clip": handle_object_clip,
 }
 
 
@@ -558,7 +713,7 @@ def _asset_state_label(asset: spec.Asset, man: dict, state_store: dict) -> str:
 def cmd_status() -> None:
     man = manifest.load_manifest()
     state_store = load_state()
-    for phase in range(1, 7):
+    for phase in spec.PHASES:
         assets = sorted(spec.phase_assets(phase), key=lambda a: a.name)
         print(f"\n=== Phase {phase} ({len(assets)} files) ===")
         for asset in assets:

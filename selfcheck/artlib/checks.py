@@ -8,7 +8,7 @@ import numpy as np
 from PIL import Image
 
 from . import spec
-from .keying import GREEN_ARR, MAGENTA_ARR, closest_expected_key, color_distance, detect_key_color
+from .keying import BLACK_ARR, GREEN_ARR, MAGENTA_ARR, closest_expected_key, color_distance, detect_key_color
 from .sprites import alpha_bbox
 
 Check = tuple[str, str]
@@ -16,6 +16,9 @@ Check = tuple[str, str]
 MIN_SHORT_SIDE = 720
 MIN_FPS = 20
 BG_DISTANCE_OK = 90.0
+BLACK_DISTANCE_OK = 24.0  # a glow adds its background to the scene, so black must be near true black
+EDGE_WARN_PCT = 1.0
+OBJECT_SIZE_WARN_PCT = 20.0
 FRINGE_WARN = 2.0
 FRINGE_FAIL = 6.0
 ZOOM_FAIL_PCT = 10.0
@@ -71,9 +74,15 @@ def check_fps(fps: float) -> Check:
 
 
 def check_background(detected: np.ndarray, expected_bg: str) -> Check:
-    if expected_bg not in ("green", "magenta"):
+    if expected_bg not in ("green", "magenta", "black"):
         return ("PASS", "background is scene/painted art, not checked for a flat key colour")
-    expected_arr = GREEN_ARR if expected_bg == "green" else MAGENTA_ARR
+    expected_arr = {"green": GREEN_ARR, "magenta": MAGENTA_ARR, "black": BLACK_ARR}[expected_bg]
+    if expected_bg == "black" and color_distance(detected, expected_arr) > BLACK_DISTANCE_OK:
+        hexval = "#%02x%02x%02x" % tuple(int(max(0, min(255, c))) for c in detected)
+        closer, _ = closest_expected_key(detected)
+        if closer != "black":
+            return ("FAIL", f"background {hexval} looks like {closer}, expected black")
+        return ("FAIL", f"background {hexval} is not pure black; grey or tinted black shows as a haze in the game")
     dist = color_distance(detected, expected_arr)
     hexval = "#%02x%02x%02x" % tuple(int(max(0, min(255, c))) for c in detected)
     if dist <= BG_DISTANCE_OK:
@@ -218,7 +227,8 @@ def check_portrait_not_flat(rgb: np.ndarray) -> Check:
     std = float(np.std(pixels))
     detected = np.median(pixels, axis=0)
     closer, dist = closest_expected_key(detected)
-    if std < 6.0 and dist < 40.0:
+    # Dark painted backgrounds (Elon's charcoal) are fine: only a green or magenta screen fails.
+    if std < 6.0 and dist < 40.0 and closer != "black":
         return ("FAIL", f"portrait corners look like a flat {closer} screen, not painted art")
     return ("PASS", "portrait corners are painted, not a flat chroma colour")
 
@@ -247,3 +257,38 @@ def check_menu_size(name: str, width: int, height: int) -> Check:
     if pct <= 10.0:
         return ("WARN", f"{name} is {width}x{height}, expected {tw}x{th}")
     return ("FAIL", f"{name} is {width}x{height}, expected {tw}x{th}")
+
+
+# ------------------------------------------------ part 2: glow and objects --
+
+def check_edge_clear(frames_rgba: list[np.ndarray], allowed: tuple[str, ...] = ()) -> Check:
+    """Glow and objects must stay inside the frame. Reports the edges the effect
+    touches (more than EDGE_WARN_PCT of that edge lit on some frame), ignoring
+    edges a beam or trail is allowed to run to.
+    """
+    touched: set[str] = set()
+    for f in frames_rgba:
+        vis = f[..., 3] > 32
+        edges = {"top": vis[0, :], "bottom": vis[-1, :], "left": vis[:, 0], "right": vis[:, -1]}
+        for name, line in edges.items():
+            if name not in allowed and 100.0 * line.mean() > EDGE_WARN_PCT:
+                touched.add(name)
+    if touched:
+        return ("WARN", f"effect touches the frame edge ({', '.join(sorted(touched))}); it will look cut off in the game")
+    return ("PASS", "effect stays inside the frame")
+
+
+def check_object_size(fill: tuple[float, float], reference_fill: tuple[float, float] | None, axis: str) -> Check:
+    """Clip vs its approved reference: how much of the frame the object fills along
+    its main axis. A big change means the tool zoomed or redrew it.
+    """
+    if reference_fill is None:
+        return ("PASS", "no reference yet to compare the object size against")
+    i = 0 if axis == "width" else 1
+    ref = reference_fill[i]
+    if ref <= 0:
+        return ("PASS", "object size check not applicable")
+    pct = 100.0 * abs(fill[i] - ref) / ref
+    if pct > OBJECT_SIZE_WARN_PCT:
+        return ("WARN", f"object {axis} fills {fill[i]:.0%} of the frame vs {ref:.0%} in the reference ({pct:.0f}% different)")
+    return ("PASS", f"object size within {pct:.0f}% of the reference")
